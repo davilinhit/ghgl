@@ -85,6 +85,10 @@ namespace ghgl
             _glActiveTexture = (glActiveTextureProc)GetProc<glActiveTextureProc>();
             _glGenerateMipmap = (glGenerateMipmapProc)GetProc<glGenerateMipmapProc>();
             _glTexStorage2D = (glTexStorage2DProc)GetProc<glTexStorage2DProc>();
+            _glBindFramebuffer = (glBindFramebufferProc)GetProc<glBindFramebufferProc>();
+            _glBlitFramebuffer = (glBlitFramebufferProc)GetProc<glBlitFramebufferProc>();
+            _glGenFramebuffers = (glGenFramebuffersProc)GetProc<glGenFramebuffersProc>();
+            _glFramebufferTexture = (glFramebufferTextureProc)GetProc<glFramebufferTextureProc>();
         }
 
         static Delegate GetProc<T>()
@@ -107,6 +111,11 @@ namespace ghgl
         public const uint GL_ONE_MINUS_SRC_ALPHA = 0x0303;
         public const uint GL_DST_ALPHA = 0x0304;
         public const uint GL_ONE_MINUS_DST_ALPHA = 0x0305;
+
+
+        public const uint GL_DEPTH_BUFFER_BIT = 0x00000100;
+        public const uint GL_STENCIL_BUFFER_BIT = 0x00000400;
+        public const uint GL_COLOR_BUFFER_BIT = 0x00004000;
 
 
         public const uint GL_BYTE = 0x1400;
@@ -229,6 +238,14 @@ namespace ghgl
         public const uint GL_CLAMP = 0x2900;
         public const uint GL_REPEAT = 0x2901;
 
+        public const uint GL_FRAMEBUFFER_BINDING = 0x8CA6;
+        public const uint GL_DRAW_FRAMEBUFFER_BINDING = 0x8CA6;
+        public const uint GL_RENDERBUFFER_BINDING = 0x8CA7;
+        public const uint GL_READ_FRAMEBUFFER = 0x8CA8;
+        public const uint GL_DRAW_FRAMEBUFFER = 0x8CA9;
+        public const uint GL_READ_FRAMEBUFFER_BINDING = 0x8CAA;
+
+        public const uint GL_COLOR_ATTACHMENT0 = 0x8CE0;
 
         const string OPENGL_LIB = "opengl32.dll";
         [DllImport(OPENGL_LIB)]
@@ -242,6 +259,9 @@ namespace ghgl
 
         [DllImport(OPENGL_LIB)]
         public static extern GLenum glGetError();
+
+        [DllImport(OPENGL_LIB)]
+        public static extern void glGetIntegerv(GLenum pname, [MarshalAs(UnmanagedType.LPArray)]GLint[] data);
 
         [DllImport(OPENGL_LIB)]
         public static extern IntPtr wglGetProcAddress(string function);
@@ -306,6 +326,16 @@ namespace ghgl
             buffers = new GLuint[n];
             _glGenBuffers(n, buffers);
         }
+
+        delegate void glGenFramebuffersProc(GLsizei n, [MarshalAs(UnmanagedType.LPArray)]GLuint[] framebuffers);
+        static glGenFramebuffersProc _glGenFramebuffers;
+        public static void glGenFramebuffers(GLsizei n, out GLuint[] framebuffers)
+        {
+            framebuffers = new GLuint[n];
+            _glGenFramebuffers(n, framebuffers);
+        }
+
+
 
         delegate void glBufferDataProc(GLenum target, GLsizeiptr size, IntPtr data, GLenum usage);
         static glBufferDataProc _glBufferData;
@@ -650,9 +680,28 @@ namespace ghgl
             _glTexStorage2D(target, levels, internalformat, width, height);
         }
 
+        delegate void glBindFramebufferProc(GLenum target, GLuint framebuffer);
+        static glBindFramebufferProc _glBindFramebuffer;
+        public static void glBindFramebuffer(GLenum target, GLuint framebuffer)
+        {
+            _glBindFramebuffer(target, framebuffer);
+        }
 
-        //    glActiveTexture(GL_TEXTURE0);
-        //    glBindTexture(GL_TEXTURE_2D, Base);
+        delegate void glBlitFramebufferProc(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+        static glBlitFramebufferProc _glBlitFramebuffer;
+        public static void glBlitFramebuffer(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter)
+        {
+            _glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY0, mask, filter);
+        }
+
+        delegate void glFramebufferTextureProc(GLenum target, GLenum attachment, GLuint texture, GLint level);
+        static glFramebufferTextureProc _glFramebufferTexture;
+        public static void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLint level)
+        {
+            _glFramebufferTexture(target, attachment, texture, level);
+        }
+
+
 
 
         public static bool ErrorOccurred(out string errorMessage)

@@ -64,7 +64,7 @@ namespace ghgl
 
                             }
                         };
-                        _animationTimer.Start();
+                        //_animationTimer.Start();
                     }
                 }
                 else

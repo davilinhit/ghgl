@@ -158,6 +158,42 @@ namespace ghgl
                     }
                     OpenGL.glUniform1iv(location, maxlights, v);
                 });
+                Register("_frameBufferColor", (location, display) =>
+                {
+                    var viewportSize = display.Viewport.Size;
+
+                    int[] currentDrawFBO = new int[] { 0 };
+                    OpenGL.glGetIntegerv(OpenGL.GL_DRAW_FRAMEBUFFER_BINDING, currentDrawFBO);
+                    int[] currentReadFBO = new int[] { 0 };
+                    OpenGL.glGetIntegerv(OpenGL.GL_READ_FRAMEBUFFER_BINDING, currentReadFBO);
+                    OpenGL.glBindFramebuffer(OpenGL.GL_READ_FRAMEBUFFER, (uint)currentDrawFBO[0]);
+
+                    uint[] textureFrameBuffers;
+                    OpenGL.glGenFramebuffers(1, out textureFrameBuffers);
+                    OpenGL.glBindFramebuffer(OpenGL.GL_DRAW_FRAMEBUFFER, textureFrameBuffers[0]);
+
+                    // create a RGBA color texture
+                    uint[] textures = new uint[] { 0 };
+                    OpenGL.glGenTextures(1, textures);
+                    OpenGL.glBindTexture(OpenGL.GL_TEXTURE_2D, textures[0]);
+                    OpenGL.glTexImage2D(OpenGL.GL_TEXTURE_2D, 0, (int)OpenGL.GL_RGBA,
+                                        viewportSize.Width, viewportSize.Height,
+                                        0, OpenGL.GL_RGBA, OpenGL.GL_UNSIGNED_BYTE, IntPtr.Zero);
+                    OpenGL.glTexParameteri(OpenGL.GL_TEXTURE_2D, OpenGL.GL_TEXTURE_MAG_FILTER, (int)OpenGL.GL_NEAREST);
+                    OpenGL.glTexParameteri(OpenGL.GL_TEXTURE_2D, OpenGL.GL_TEXTURE_MIN_FILTER, (int)OpenGL.GL_NEAREST);
+
+                    OpenGL.glFramebufferTexture(OpenGL.GL_DRAW_FRAMEBUFFER, OpenGL.GL_COLOR_ATTACHMENT0, textures[0], 0);
+                    OpenGL.glBlitFramebuffer(0, 0, viewportSize.Width, viewportSize.Height,
+                        0, 0, viewportSize.Width, viewportSize.Height, OpenGL.GL_COLOR_BUFFER_BIT, OpenGL.GL_LINEAR);
+
+                    OpenGL.glActiveTexture(OpenGL.GL_TEXTURE0);
+                    OpenGL.glBindTexture(OpenGL.GL_TEXTURE_2D, textures[0]);
+                    OpenGL.glUniform1i(location, 0);
+
+                    // restore bindings
+                    OpenGL.glBindFramebuffer(OpenGL.GL_READ_FRAMEBUFFER, (uint)currentReadFBO[0]);
+                    OpenGL.glBindFramebuffer(OpenGL.GL_DRAW_FRAMEBUFFER, (uint)currentDrawFBO[0]);
+                });
 
                 _uniformBuiltins.Sort((a, b) => (a.Name.CompareTo(b.Name)));
             }
